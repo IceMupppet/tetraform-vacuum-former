@@ -1,5 +1,6 @@
 #include "WS2801.h"
 #include "OneWire.h" 
+#include "TrueRandom.h"
 
 /***************************************
  THERMOMETER WIRE PINOUTS:
@@ -33,13 +34,14 @@ int relayPin = 11;
 
 // Configuration
 int startup_cycles = 1;
+int startup_theme  = 0;
 int cycle_counter  = 0;
 int numberLEDs = 5;
 
 int relayStatus   = 0;
 int warningStatus = 0;
 int numberOfWarnings = 0;
-int warningsAllowed  = 3;
+int warningsAllowed  = 20;
 int timeoutStatus = 0;
 
 int countdownTimer = 50000; // ms
@@ -54,14 +56,14 @@ void setup() {
   pinMode(relayPin, OUTPUT);
   
   Serial.begin(9600);
+  
+  startup_theme = TrueRandom.random(1,300);
+  
   delay(100);
   Serial.println(" Tetraform v1.0");
+  Serial.print("Startup Theme ID: ");
+  Serial.println(startup_theme);
 }
-
-
-
-
-
 
 /*************************************************************
 ##############################################################
@@ -72,9 +74,16 @@ void setup() {
 void loop(void) {
   
   // STARTUP SEQUENCE
-  
   if(cycle_counter <= startup_cycles){
-    rainbowCycle(10);
+    if(startup_theme < 100){
+      rainbow(10);
+    }
+    else if(startup_theme < 200){
+      ledBounce(30);
+    }
+    else{
+      rainbowCycle(10);
+    }
   }
   else{
     
@@ -98,32 +107,30 @@ void loop(void) {
       
     }
       
-    
-    
     // TEMPERATURE DISPLAY
   
     float temperature = getTemp();
 
-    if(covertToFerenheit(temperature) < 70.0){
+    if(covertToFerenheit(temperature) < 80.0){
       numberOfWarnings = 0;
       for(int k=0;k<numberLEDs;k++){
         SpheroDisplay.setPixelColor(k, Color(0, 20, 158));
       }
     }
-    else if(covertToFerenheit(temperature) < 81.0){
+    else if(covertToFerenheit(temperature) < 150.0){
       numberOfWarnings = 0;
       for(int k=0;k<numberLEDs;k++){
         SpheroDisplay.setPixelColor(k, Color(0, 160, 20));
       }
     }
-    else if(covertToFerenheit(temperature) < 100.5){
+    else if(covertToFerenheit(temperature) < 255.5){
       numberOfWarnings = 0;
       for(int k=0;k<numberLEDs;k++){
         SpheroDisplay.setPixelColor(k, Color(200, 0, 0));
       }
     }
     else{
-      // Overheat Warning.  if more than 3 times, shutdown. 
+      // Overheat Warning.  if too many times: shutdown. 
       numberOfWarnings++;
       for(int k=0;k<numberLEDs;k++){
         SpheroDisplay.setPixelColor(k, Color(255, 165, 0));
@@ -135,7 +142,7 @@ void loop(void) {
     
     SpheroDisplay.show();
     
-    Serial.println(covertToFerenheit(temperature));
+    //Serial.println(covertToFerenheit(temperature));
     delay(100); 
   }
   
@@ -252,6 +259,38 @@ void rainbowCycle(uint8_t wait) {
   }
 }
 
+
+void ledBounce(uint8_t wait) {
+  int m, n, o;
+  
+  cycle_counter++;
+  for(o=0;o<3;o++){
+    for(m=0; m < SpheroDisplay.numPixels(); m++){
+      for (n=0; n < SpheroDisplay.numPixels(); n++) {
+        if(m == n){
+          SpheroDisplay.setPixelColor(n, Color(255, 160, 0));
+        }
+        else{
+          SpheroDisplay.setPixelColor(n, Color(0, 0, 0));
+        }
+      }
+      SpheroDisplay.show();   
+      delay(wait);
+    }
+    for(m = SpheroDisplay.numPixels() - 1; m >= 0; m--){
+      for (n=0; n < SpheroDisplay.numPixels(); n++) {
+        if(m == n){
+          SpheroDisplay.setPixelColor(n, Color(255, 160, 0));
+        }
+        else{
+          SpheroDisplay.setPixelColor(n, Color(0, 0, 0));
+        }
+      }
+      SpheroDisplay.show();   
+      delay(wait);
+    }
+  }
+}
 
 // wipe the entire chain one by one.
 void colorWipe(uint32_t c, uint8_t wait) {
