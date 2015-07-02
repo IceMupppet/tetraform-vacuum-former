@@ -38,6 +38,8 @@ int numberLEDs = 5;
 
 int relayStatus   = 0;
 int warningStatus = 0;
+int numberOfWarnings = 0;
+int warningsAllowed  = 3;
 int timeoutStatus = 0;
 
 int countdownTimer = 50000; // ms
@@ -103,23 +105,32 @@ void loop(void) {
     float temperature = getTemp();
 
     if(covertToFerenheit(temperature) < 70.0){
+      numberOfWarnings = 0;
       for(int k=0;k<numberLEDs;k++){
         SpheroDisplay.setPixelColor(k, Color(0, 20, 158));
       }
     }
     else if(covertToFerenheit(temperature) < 81.0){
+      numberOfWarnings = 0;
       for(int k=0;k<numberLEDs;k++){
         SpheroDisplay.setPixelColor(k, Color(0, 160, 20));
       }
     }
     else if(covertToFerenheit(temperature) < 100.5){
+      numberOfWarnings = 0;
       for(int k=0;k<numberLEDs;k++){
         SpheroDisplay.setPixelColor(k, Color(200, 0, 0));
       }
     }
     else{
-      // Overheat Warning - Shutdown.
-      warningStatus = 1;
+      // Overheat Warning.  if more than 3 times, shutdown. 
+      numberOfWarnings++;
+      for(int k=0;k<numberLEDs;k++){
+        SpheroDisplay.setPixelColor(k, Color(255, 165, 0));
+      }
+      if(numberOfWarnings > warningsAllowed){
+        warningStatus = 1;
+      }
     }
     
     SpheroDisplay.show();
